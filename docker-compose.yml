@@ -1,0 +1,103 @@
+services:
+    php_laravel11:
+        image: php:8.4.3-fpm
+        build:
+            dockerfile: docker/php/Dockerfile
+        container_name: php_laravel11
+        volumes:
+            - ./www:/var/www/html/htdocs/
+            - 'php-socket:/var/run/php'
+        networks:
+            - net
+        restart: always
+
+    nginx_laravel11:
+        image: nginx
+        container_name: nginx_laravel11
+        links:
+            - php_laravel11
+        environment:
+            NGINX_HOST: ${NGINX_HOST}
+        volumes:
+            - ./www:/var/www/html/htdocs/
+            - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/laravel11.conf
+            - ./log:/var/log/nginx-stable/
+            - 'php-socket:/var/run/php'
+        ports:
+            - 88:80
+        networks:
+            - net
+        restart: always
+
+    #postgre service
+    pgsql_laravel11:
+        image: 'postgres:17'
+        container_name: pgsql_laravel11
+        ports:
+            - '${DB_PORT:-5432}:${DOCKER_DB_PORT:-5432}'
+        environment:
+            PGPASSWORD: '${DB_PASSWORD:-secret}'
+            POSTGRES_DB: '${DB_DATABASE}'
+            POSTGRES_USER: '${DB_USERNAME}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+            SERVICE_NAME: pgsql
+        volumes:
+            - 'pgsql:/var/lib/postgresql/data'
+            - './docker/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
+        networks:
+            - net
+        healthcheck:
+            test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}" ]
+            retries: 3
+            timeout: 5s
+
+    #redis service
+    redis_laravel11:
+        build:
+            dockerfile: docker/redis/Dockerfile
+        image: 'redis:v1'
+        container_name:
+            redis_laravel11
+        ports:
+            - '${REDIS_PORT:-6379}:${DOCKER_REDIS_PORT:-6379}'
+
+        restart: always
+        tty: true
+
+        environment:
+            SERVICE_NAME: redis
+
+        working_dir: '/usr/local/etc'
+        networks:
+            - net
+
+    #sshd service
+#    sshd_laravel11:
+#        build:
+#            dockerfile: docker/sshd/Dockerfile
+#        image: 'sshd:v1'
+#        container_name:
+#            sshd_laravel11
+#        ports:
+#            - '${SSH_PORT:-22}:${DOCKER_SSH_PORT:-22}'
+#
+#        restart: always
+#        tty: true
+#
+#        environment:
+#            SERVICE_NAME: sshd
+#
+#        working_dir: '/home'
+#        networks:
+#            - net
+
+#Docker Networks
+networks:
+    net:
+        driver: bridge
+
+#Volumes
+volumes:
+    pgsql:
+        driver: local
+    php-socket:
