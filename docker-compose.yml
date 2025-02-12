@@ -71,26 +71,6 @@ services:
         networks:
             - net
 
-    #sshd service
-#    sshd_laravel11:
-#        build:
-#            dockerfile: docker/sshd/Dockerfile
-#        image: 'sshd:v1'
-#        container_name:
-#            sshd_laravel11
-#        ports:
-#            - '${SSH_PORT:-22}:${DOCKER_SSH_PORT:-22}'
-#
-#        restart: always
-#        tty: true
-#
-#        environment:
-#            SERVICE_NAME: sshd
-#
-#        working_dir: '/home'
-#        networks:
-#            - net
-
 #Docker Networks
 networks:
     net:
